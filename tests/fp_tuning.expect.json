@@ -1,0 +1,13 @@
+[
+  {"name": "T1 Defender-path service by SYSTEM is downgraded",        "agent": "DC01", "eventID": "4697", "match": {"eventdata.serviceName": "LabDefPathSys"}, "expect_rule": "100531", "expect_level": 3},
+  {"name": "T2 Defender-path service by Administrator still alerts",  "agent": "DC01", "eventID": "4697", "match": {"eventdata.serviceName": "LabDefPathAdm"}, "expect_rule": "100514", "expect_level": 12},
+  {"name": "T3 user-service template by Administrator still alerts",  "agent": "DC01", "eventID": "4697", "match": {"eventdata.serviceName": "LabUserSvcTest"}, "expect_rule": "100514", "expect_level": 12},
+  {"name": "T4 \\Microsoft\\Windows task by SYSTEM lowered to 8",     "agent": "DC01", "eventID": "4698", "match_re": {"eventdata.taskName": "LabTuneSys$"}, "expect_rule": "100532", "expect_level": 8},
+  {"name": "T5 \\Microsoft\\Windows task by Administrator stays 12",  "agent": "DC01", "eventID": "4698", "match_re": {"eventdata.taskName": "LabTuneAdm$"}, "expect_rule": "100516", "expect_level": 12},
+  {"name": "T6 Explorer sign-in task is downgraded",                  "agent": "DC01", "eventID": "4698", "match_re": {"eventdata.taskName": "CreateExplorerShellUnelevatedTask$", "eventdata.taskContent": "Explorer\\.EXE"}, "expect_rule": "100533", "expect_level": 3},
+  {"name": "T6b same task name, other payload still alerts",          "agent": "DC01", "eventID": "4698", "match_re": {"eventdata.taskName": "CreateExplorerShellUnelevatedTask$", "eventdata.taskContent": "cmd\\.exe"}, "expect_rule": "100516", "expect_level": 12},
+  {"name": "T8 LAPS rotation by SYSTEM is downgraded",                "agent": "WS01", "eventID": "4724", "match": {"eventdata.subjectUserName": "WS01$"}, "expect_rule": "100534", "expect_level": 3},
+  {"name": "T9 PowerShell policy-test file is downgraded",            "agent": "WS01", "eventID": "11",   "match_re": {"eventdata.targetFilename": "__PSScriptPolicyTest_"}, "expect_rule": "100535", "expect_level": 3},
+  {"name": "T10 other script dropped in Temp still alerts",           "agent": "WS01", "eventID": "11",   "match_re": {"eventdata.targetFilename": "lab-dropper-test\\.ps1$"}, "expect_rule": "92213", "expect_level": 15},
+  {"name": "T11 encoded PowerShell rule still fires",                 "agent": "WS01", "eventID": "1",    "match_re": {"eventdata.commandLine": "-EncodedCommand"}, "expect_rule": "92057", "expect_level": 12}
+]

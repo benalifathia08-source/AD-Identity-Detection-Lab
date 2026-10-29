@@ -1,0 +1,24 @@
+# Secrets and local settings
+.env
+*.key
+*.pem
+id_*
+*_lab
+*_lab.pub
+
+# VM and media files never belong in the repo
+*.iso
+*.vmdk
+*.vmx
+*.vmem
+*.nvram
+
+# Raw log exports can contain sensitive data; commit sanitized samples only
+*.evtx
+reports/raw/
+
+# OS / editor noise
+Thumbs.db
+.DS_Store
+.vscode/
+__pycache__/

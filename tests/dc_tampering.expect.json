@@ -1,0 +1,10 @@
+[
+  {"name": "Audit policy changed on DC by Administrator",    "agent": "DC01", "eventID": "4719", "match": {"eventdata.subjectUserName": "Administrator"}, "expect_rule": "100510", "expect_level": 12},
+  {"name": "Audit policy changed on DC by DC01$ (GPO-like)", "agent": "DC01", "eventID": "4719", "match": {"eventdata.subjectUserName": "DC01$"}, "expect_rule": "60112", "expect_level": 8},
+  {"name": "Service installed on DC",                        "agent": "DC01", "eventID": "4697", "match": {"eventdata.serviceName": "LabTestSvc"}, "expect_rule": "100514", "expect_level": 12},
+  {"name": "Scheduled task created on DC",                   "agent": "DC01", "eventID": "4698", "match": {"eventdata.taskName": "\\\\LabTestTask"}, "expect_rule": "100516", "expect_level": 12},
+  {"name": "Security log cleared on WS01",                   "agent": "WS01", "eventID": "1102", "expect_rule": "100512", "expect_level": 13},
+  {"name": "Windows PowerShell log cleared on WS01",         "agent": "WS01", "eventID": "104",  "expect_rule": "100513", "expect_level": 10},
+  {"name": "Service installed on WS01",                      "agent": "WS01", "eventID": "4697", "match": {"eventdata.serviceName": "LabTestSvc"}, "expect_rule": "100515", "expect_level": 6},
+  {"name": "Negative: scheduled task on WS01 stays default", "agent": "WS01", "eventID": "4698", "match": {"eventdata.taskName": "\\\\LabTestTask"}, "expect_rule": "60228", "expect_level": 4}
+]

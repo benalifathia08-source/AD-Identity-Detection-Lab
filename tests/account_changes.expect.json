@@ -1,0 +1,11 @@
+[
+  {"name": "Account object created in Admins OU (5137)",   "agent": "DC01", "eventID": "5137", "match": {"eventdata.objectDN": "CN=adm.testops,OU=Admins,OU=FTOU7,DC=ftou7,DC=internal"}, "expect_rule": "100520", "expect_level": 10},
+  {"name": "Admin-named account created (4720)",           "agent": "DC01", "eventID": "4720", "match": {"eventdata.targetUserName": "adm.testops"}, "expect_rule": "100521", "expect_level": 10},
+  {"name": "Admin account enabled / re-enabled (4722)",    "agent": "DC01", "eventID": "4722", "match": {"eventdata.targetUserName": "adm.testops"}, "expect_rule": "100522", "expect_level": 12},
+  {"name": "Admin account password reset (4724)",          "agent": "DC01", "eventID": "4724", "match": {"eventdata.targetUserName": "adm.testops"}, "expect_rule": "100523", "expect_level": 10},
+  {"name": "Admin account disabled stays default (4725)",  "agent": "DC01", "eventID": "4725", "match": {"eventdata.targetUserName": "adm.testops"}, "expect_rule": "60111", "expect_level": 8},
+  {"name": "Negative: normal user object created (5137)",  "agent": "DC01", "eventID": "5137", "match": {"eventdata.objectDN": "CN=test.user,OU=Users,OU=FTOU7,DC=ftou7,DC=internal"}, "expect_rule": "60230", "expect_level": 4},
+  {"name": "Negative: normal user created (4720)",         "agent": "DC01", "eventID": "4720", "match": {"eventdata.targetUserName": "test.user"}, "expect_rule": "60109", "expect_level": 8},
+  {"name": "Negative: normal user enabled (4722)",         "agent": "DC01", "eventID": "4722", "match": {"eventdata.targetUserName": "test.user"}, "expect_rule": "60109", "expect_level": 8},
+  {"name": "Negative: normal user password set (4724)",    "agent": "DC01", "eventID": "4724", "match": {"eventdata.targetUserName": "test.user"}, "expect_rule": "none", "expect_level": 0}
+]

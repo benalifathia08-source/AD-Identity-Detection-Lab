@@ -1,0 +1,12 @@
+[
+  {"name": "Backup Operators add by Administrator",      "agent": "DC01", "eventID": "4732", "match": {"eventdata.targetUserName": "Backup Operators", "eventdata.subjectUserName": "Administrator"}, "expect_rule": "100500", "expect_level": 12},
+  {"name": "Backup Operators removal by Administrator",  "agent": "DC01", "eventID": "4733", "match": {"eventdata.targetUserName": "Backup Operators", "eventdata.subjectUserName": "Administrator"}, "expect_rule": "100502", "expect_level": 8},
+  {"name": "Domain Admins add by Administrator",         "agent": "DC01", "eventID": "4728", "match": {"eventdata.targetUserName": "Domain Admins"}, "expect_rule": "100500", "expect_level": 12},
+  {"name": "Domain Admins removal by Administrator",     "agent": "DC01", "eventID": "4729", "match": {"eventdata.targetUserName": "Domain Admins"}, "expect_rule": "100502", "expect_level": 8},
+  {"name": "DnsAdmins add",                              "agent": "DC01", "eventID": "4732", "match": {"eventdata.targetUserName": "DnsAdmins"}, "expect_rule": "100501", "expect_level": 12},
+  {"name": "DnsAdmins removal",                          "agent": "DC01", "eventID": "4733", "match": {"eventdata.targetUserName": "DnsAdmins"}, "expect_rule": "100503", "expect_level": 8},
+  {"name": "Negative: GG-Sales add stays default",       "agent": "DC01", "eventID": "4728", "match": {"eventdata.targetUserName": "GG-Sales"}, "expect_rule": "60141", "expect_level": 5},
+  {"name": "Negative: GG-Sales removal stays default",   "agent": "DC01", "eventID": "4729", "match": {"eventdata.targetUserName": "GG-Sales"}, "expect_rule": "60142", "expect_level": 5},
+  {"name": "Backup Operators add by DC01$ (non-approved)", "agent": "DC01", "eventID": "4732", "match": {"eventdata.targetUserName": "Backup Operators", "eventdata.subjectUserName": "DC01$"}, "expect_rule": "100505", "expect_level": 14},
+  {"name": "Backup Operators removal by DC01$",          "agent": "DC01", "eventID": "4733", "match": {"eventdata.targetUserName": "Backup Operators", "eventdata.subjectUserName": "DC01$"}, "expect_rule": "100502", "expect_level": 8}
+]

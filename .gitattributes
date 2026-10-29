@@ -1,0 +1,11 @@
+# Files deployed to the Linux Wazuh server must keep LF line endings
+*.py               text eol=lf
+*.sh               text eol=lf
+rules/*.xml        text eol=lf
+configs/wazuh/**   text eol=lf
+
+# Windows scripts stay CRLF
+*.ps1              text eol=crlf
+
+# Images are never touched by line-ending conversion
+*.png              binary

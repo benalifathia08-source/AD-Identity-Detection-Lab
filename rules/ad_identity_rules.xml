@@ -1,0 +1,299 @@
+<!--
+  AD Identity Detection Lab - custom Wazuh rules
+  Rule ID range: 100500-100599
+
+  ===== Privileged group membership changes (MITRE ATT&CK T1098 Account Manipulation) =====
+  Wazuh's default ruleset already alerts on ~40 well-known groups (60154-60193), e.g.
+  60159 Domain Admins (12), 60166 Schema Admins (12), 60167 Enterprise Admins (12),
+  60154 Administrators (12), 60176 Backup Operators (12). These custom rules extend them:
+    100500 / 100502  say whether a member was ADDED or REMOVED, who the member was and who did it
+                     (the defaults title both cases "... Group Changed")
+    100501 / 100503  cover DnsAdmins, which has no well-known SID and no default rule
+    100505           escalate when the change is made by an account outside the approved admins
+-->
+<group name="windows,ad_identity,privileged_group_change,">
+
+  <!-- Tier-0 / high-impact groups covered by default rules:
+       60154 Administrators, 60159 Domain Admins, 60164 Domain Controllers, 60166 Schema Admins,
+       60167 Enterprise Admins, 60168 Group Policy Creator Owners, 60173 Account Operators,
+       60174 Server Operators, 60175 Print Operators, 60176 Backup Operators -->
+  <rule id="100500" level="12">
+    <if_sid>60154, 60159, 60164, 60166, 60167, 60168, 60173, 60174, 60175, 60176</if_sid>
+    <field name="win.system.eventID">^4728$|^4732$|^4756$</field>
+    <description>AD: $(win.eventdata.memberName) added to privileged group $(win.eventdata.targetUserName) by $(win.eventdata.subjectUserName)</description>
+    <mitre>
+      <id>T1098</id>
+    </mitre>
+    <group>account_manipulation,</group>
+  </rule>
+
+  <rule id="100502" level="8">
+    <if_sid>60154, 60159, 60164, 60166, 60167, 60168, 60173, 60174, 60175, 60176</if_sid>
+    <field name="win.system.eventID">^4729$|^4733$|^4757$</field>
+    <description>AD: $(win.eventdata.memberName) removed from privileged group $(win.eventdata.targetUserName) by $(win.eventdata.subjectUserName)</description>
+    <mitre>
+      <id>T1098</id>
+    </mitre>
+    <group>account_manipulation,</group>
+  </rule>
+
+  <!-- DnsAdmins: domain local group, variable RID, matched by name -->
+  <rule id="100501" level="12">
+    <if_sid>60144</if_sid>
+    <field name="win.eventdata.targetUserName" type="pcre2">(?i)^DnsAdmins$</field>
+    <description>AD: $(win.eventdata.memberName) added to DnsAdmins by $(win.eventdata.subjectUserName)</description>
+    <mitre>
+      <id>T1098</id>
+    </mitre>
+    <group>account_manipulation,</group>
+  </rule>
+
+  <rule id="100503" level="8">
+    <if_sid>60145</if_sid>
+    <field name="win.eventdata.targetUserName" type="pcre2">(?i)^DnsAdmins$</field>
+    <description>AD: $(win.eventdata.memberName) removed from DnsAdmins by $(win.eventdata.subjectUserName)</description>
+    <mitre>
+      <id>T1098</id>
+    </mitre>
+    <group>account_manipulation,</group>
+  </rule>
+
+  <!-- Approved admins for this lab, by SID (names can be renamed, and every machine has a local account
+       called "Administrator"): FTOU7\Administrator (RID 500) and FTOU7\adm.amira (RID 1134).
+       Anyone else adding members to a privileged group is unexpected. -->
+  <rule id="100505" level="14">
+    <if_sid>100500, 100501</if_sid>
+    <field name="win.eventdata.subjectUserSid" negate="yes">^S-1-5-21-876451787-78810159-3123751869-500$|^S-1-5-21-876451787-78810159-3123751869-1134$</field>
+    <description>AD: privileged group $(win.eventdata.targetUserName) modified by non-approved account $(win.eventdata.subjectUserName)</description>
+    <mitre>
+      <id>T1098</id>
+    </mitre>
+    <group>account_manipulation,</group>
+  </rule>
+
+</group>
+
+<!--
+  ===== Domain controller and logging tampering =====
+  Domain controllers are identified by hostname (lab convention DC<n>.ftou7.internal).
+  Defaults extended: 60112 audit policy changed (8), 60117 / 63103 Security log cleared (9 / 5),
+  63104 other log cleared (5), 60228 scheduled task created (4). 4697 has no default rule.
+-->
+<group name="windows,ad_identity,dc_tampering,">
+
+  <!-- Audit policy changed on a DC by a user account. Group Policy applying audit settings logs the
+       same event under the computer account (name ending in $); those keep the default level 8
+       instead of being suppressed, because an attacker running as SYSTEM would look the same. -->
+  <rule id="100510" level="12">
+    <if_sid>60112</if_sid>
+    <field name="win.system.computer" type="pcre2">(?i)^DC\d+\.</field>
+    <field name="win.eventdata.subjectUserName" type="pcre2" negate="yes">\$$</field>
+    <description>DC tampering: audit policy changed on $(win.system.computer) by $(win.eventdata.subjectUserName)</description>
+    <mitre>
+      <id>T1562.002</id>
+    </mitre>
+    <group>defense_evasion,</group>
+  </rule>
+
+  <!-- Clearing the Security log is rarely legitimate on any host -->
+  <rule id="100512" level="13">
+    <if_sid>60117, 63103</if_sid>
+    <description>Log tampering: Security log cleared on $(win.system.computer) by $(win.logFileCleared.subjectUserName)</description>
+    <mitre>
+      <id>T1070.001</id>
+    </mitre>
+    <group>defense_evasion,</group>
+  </rule>
+
+  <rule id="100513" level="10">
+    <if_sid>63104</if_sid>
+    <description>Log tampering: event log $(win.logFileCleared.channel) cleared on $(win.system.computer) by $(win.logFileCleared.subjectUserName)</description>
+    <mitre>
+      <id>T1070.001</id>
+    </mitre>
+    <group>defense_evasion,</group>
+  </rule>
+
+  <!-- 4697 (Security log) names the account that installed the service; 7045 does not -->
+  <rule id="100514" level="12">
+    <if_sid>60103</if_sid>
+    <field name="win.system.eventID">^4697$</field>
+    <field name="win.system.computer" type="pcre2">(?i)^DC\d+\.</field>
+    <description>DC tampering: service $(win.eventdata.serviceName) installed on $(win.system.computer) by $(win.eventdata.subjectUserName)</description>
+    <mitre>
+      <id>T1543.003</id>
+    </mitre>
+    <group>persistence,</group>
+  </rule>
+
+  <rule id="100515" level="6">
+    <if_sid>60103</if_sid>
+    <field name="win.system.eventID">^4697$</field>
+    <description>Service $(win.eventdata.serviceName) installed on $(win.system.computer) by $(win.eventdata.subjectUserName)</description>
+    <mitre>
+      <id>T1543.003</id>
+    </mitre>
+    <group>persistence,</group>
+  </rule>
+
+  <rule id="100516" level="12">
+    <!-- Lab automation also creates short-lived tasks on DC01 (Lab*); they are expected to alert -->
+    <if_sid>60228</if_sid>
+    <field name="win.system.computer" type="pcre2">(?i)^DC\d+\.</field>
+    <description>DC tampering: scheduled task $(win.eventdata.taskName) created on $(win.system.computer) by $(win.eventdata.subjectUserName)</description>
+    <mitre>
+      <id>T1053.005</id>
+    </mitre>
+    <group>persistence,</group>
+  </rule>
+
+</group>
+
+<!--
+  ===== Privileged account lifecycle (MITRE ATT&CK T1136.002 Create Account: Domain, T1098 Account Manipulation) =====
+  Admin accounts in this lab: objects in OU=Admins,OU=FTOU7, names starting "adm.", and the built-in
+  Administrator (RID 500). Defaults extended: 60230 directory object created (4),
+  60109 account created or enabled (8). 4724 (password reset) has no default rule.
+  Note: creating an enabled admin account produces 5137 + 4720 + 4724 (initial password) + 4722,
+  so one creation raises 100520, 100521, 100523 and 100522 together.
+-->
+<group name="windows,ad_identity,admin_account_change,">
+
+  <rule id="100520" level="10">
+    <if_sid>60230</if_sid>
+    <field name="win.eventdata.objectClass" type="pcre2">(?i)^user$</field>
+    <field name="win.eventdata.objectDN" type="pcre2">(?i),OU=Admins,OU=FTOU7,</field>
+    <description>AD: account $(win.eventdata.objectDN) created in the Admins OU by $(win.eventdata.subjectUserName)</description>
+    <mitre>
+      <id>T1136.002</id>
+    </mitre>
+    <group>persistence,</group>
+  </rule>
+
+  <rule id="100521" level="10">
+    <if_sid>60109</if_sid>
+    <field name="win.system.eventID">^4720$</field>
+    <field name="win.eventdata.targetUserName" type="pcre2">(?i)^adm\.</field>
+    <description>AD: admin-named account $(win.eventdata.targetUserName) created by $(win.eventdata.subjectUserName)</description>
+    <mitre>
+      <id>T1136.002</id>
+    </mitre>
+    <group>persistence,</group>
+  </rule>
+
+  <rule id="100522" level="12">
+    <if_sid>60109</if_sid>
+    <field name="win.system.eventID">^4722$</field>
+    <field name="win.eventdata.targetUserName" type="pcre2">(?i)^adm\.</field>
+    <description>AD: admin account $(win.eventdata.targetUserName) enabled by $(win.eventdata.subjectUserName)</description>
+    <mitre>
+      <id>T1098</id>
+    </mitre>
+    <group>persistence,</group>
+  </rule>
+
+  <rule id="100524" level="12">
+    <if_sid>60109</if_sid>
+    <field name="win.system.eventID">^4722$</field>
+    <field name="win.eventdata.targetSid" type="pcre2">^S-1-5-21-[\d-]+-500$</field>
+    <description>AD: built-in Administrator account enabled on $(win.system.computer) by $(win.eventdata.subjectUserName)</description>
+    <mitre>
+      <id>T1098</id>
+    </mitre>
+    <group>persistence,</group>
+  </rule>
+
+  <rule id="100523" level="10">
+    <if_sid>60103</if_sid>
+    <field name="win.system.eventID">^4724$</field>
+    <field name="win.eventdata.targetUserName" type="pcre2">(?i)^adm\.</field>
+    <description>AD: password of admin account $(win.eventdata.targetUserName) reset by $(win.eventdata.subjectUserName)</description>
+    <mitre>
+      <id>T1098</id>
+    </mitre>
+    <group>persistence,</group>
+  </rule>
+
+  <rule id="100525" level="10">
+    <if_sid>60103</if_sid>
+    <field name="win.system.eventID">^4724$</field>
+    <field name="win.eventdata.targetSid" type="pcre2">^S-1-5-21-[\d-]+-500$</field>
+    <description>AD: password of built-in Administrator reset on $(win.system.computer) by $(win.eventdata.subjectUserName)</description>
+    <mitre>
+      <id>T1098</id>
+    </mitre>
+    <group>persistence,</group>
+  </rule>
+
+</group>
+
+<!--
+  ===== False-positive tuning (2026-10-07) =====
+  Principle: nothing is silenced (no level 0). Benign patterns are re-ranked to a low level under their
+  own rule ID, so they stay searchable, and every exclusion requires several fields at once.
+  Event field values from the Windows decoder contain doubled backslashes, hence \\+ in paths.
+-->
+<group name="windows,ad_identity,fp_tuning,">
+
+  <!-- Per-user service instances (e.g. CDPUserSvc_25fab5) that Windows creates at every interactive sign-in:
+       service type 0xd0/0xe0 (user service + instance bits), created by SYSTEM, name ends in _<hex LUID> -->
+  <rule id="100530" level="3">
+    <if_sid>100514, 100515</if_sid>
+    <field name="win.eventdata.serviceType" type="pcre2">(?i)^0x[cdef]0$</field>
+    <field name="win.eventdata.subjectUserSid">^S-1-5-18$</field>
+    <field name="win.eventdata.serviceName" type="pcre2">(?i)_[0-9a-f]{4,8}$</field>
+    <description>Tuned: per-user service instance $(win.eventdata.serviceName) created at sign-in on $(win.system.computer)</description>
+    <group>tuned,</group>
+  </rule>
+
+  <!-- Microsoft Defender platform updates install services/drivers from its own protected folders, as SYSTEM -->
+  <rule id="100531" level="3">
+    <if_sid>100514, 100515</if_sid>
+    <field name="win.eventdata.subjectUserSid">^S-1-5-18$</field>
+    <field name="win.eventdata.serviceFileName" type="pcre2">(?i)\\+ProgramData\\+Microsoft\\+Windows Defender\\+Platform\\+[\d.\-]+\\+|^\W*system32\\+drivers\\+wd\\+</field>
+    <description>Tuned: Microsoft Defender platform component $(win.eventdata.serviceName) installed on $(win.system.computer)</description>
+    <group>tuned,</group>
+  </rule>
+
+  <!-- Windows servicing (updates) creates tasks under \Microsoft\Windows\ as SYSTEM. Attackers also hide tasks
+       there, so this is only lowered to medium (8), not to informational. -->
+  <rule id="100532" level="8">
+    <if_sid>100516</if_sid>
+    <field name="win.eventdata.subjectUserSid">^S-1-5-18$</field>
+    <field name="win.eventdata.taskName" type="pcre2">(?i)^\\+Microsoft\\+Windows\\+</field>
+    <description>Scheduled task $(win.eventdata.taskName) created by SYSTEM on $(win.system.computer) (usually Windows servicing; verify around patch windows)</description>
+    <mitre>
+      <id>T1053.005</id>
+    </mitre>
+    <group>persistence,</group>
+  </rule>
+
+  <!-- Explorer creates this task when an administrator signs in interactively. Name AND action must match
+       (C:\Windows\Explorer.EXE /NoUACCheck), so the name cannot be reused to hide a different payload. -->
+  <rule id="100533" level="3">
+    <if_sid>100516</if_sid>
+    <field name="win.eventdata.taskName" type="pcre2">(?i)^\\+CreateExplorerShellUnelevatedTask$</field>
+    <field name="win.eventdata.taskContent" type="pcre2">(?i)C:\\+Windows\\+Explorer\.EXE.{0,80}/NoUACCheck</field>
+    <description>Tuned: Explorer sign-in task created on $(win.system.computer) by $(win.eventdata.subjectUserName)</description>
+    <group>tuned,</group>
+  </rule>
+
+  <!-- Windows LAPS rotates the local Administrator password as SYSTEM on member machines -->
+  <rule id="100534" level="3">
+    <if_sid>100525</if_sid>
+    <field name="win.eventdata.subjectUserSid">^S-1-5-18$</field>
+    <field name="win.system.computer" type="pcre2" negate="yes">(?i)^DC\d+\.</field>
+    <description>Tuned: Windows LAPS rotated the local Administrator password on $(win.system.computer)</description>
+    <group>tuned,</group>
+  </rule>
+
+  <!-- PowerShell writes and deletes __PSScriptPolicyTest_<random>.ps1 in the user's Temp folder at startup -->
+  <rule id="100535" level="3">
+    <if_sid>92213</if_sid>
+    <field name="win.eventdata.image" type="pcre2">(?i)\\+(powershell|pwsh)\.exe$</field>
+    <field name="win.eventdata.targetFilename" type="pcre2">(?i)\\+AppData\\+Local\\+Temp\\+__PSScriptPolicyTest_[a-z0-9]{8}\.[a-z0-9]{3}\.ps1$</field>
+    <description>Tuned: PowerShell execution-policy test file created on $(win.system.computer)</description>
+    <group>tuned,</group>
+  </rule>
+
+</group>

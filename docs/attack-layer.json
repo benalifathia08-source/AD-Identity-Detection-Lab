@@ -1,0 +1,20 @@
+{
+  "name": "AD Identity Detection Lab - coverage",
+  "versions": { "layer": "4.5", "navigator": "5.1.0" },
+  "domain": "enterprise-attack",
+  "description": "Techniques covered by custom Wazuh rules 100500-100525, each validated with live tests in the lab (see docs/detections.md).",
+  "sorting": 0,
+  "hideDisabled": false,
+  "techniques": [
+    { "techniqueID": "T1098",     "score": 1, "color": "#31a354", "comment": "Rules 100500-100505 (privileged group changes), 100522-100525 (admin accounts enabled / reset). Live tests: 10 + 9." },
+    { "techniqueID": "T1136.002", "score": 1, "color": "#31a354", "comment": "Rules 100520, 100521 (account created in Admins OU / admin-named account). Live tests: account_changes suite." },
+    { "techniqueID": "T1562.002", "score": 1, "color": "#31a354", "comment": "Rule 100510 (audit policy changed on a DC by a user account)." },
+    { "techniqueID": "T1070.001", "score": 1, "color": "#31a354", "comment": "Rules 100512 (Security log cleared), 100513 (other event log cleared)." },
+    { "techniqueID": "T1543.003", "score": 1, "color": "#31a354", "comment": "Rules 100514 (service installed on a DC), 100515 (elsewhere), tuned by 100530/100531." },
+    { "techniqueID": "T1053.005", "score": 1, "color": "#31a354", "comment": "Rule 100516 (scheduled task created on a DC), tuned by 100532/100533." }
+  ],
+  "gradient": { "colors": ["#ffffff", "#31a354"], "minValue": 0, "maxValue": 1 },
+  "legendItems": [ { "label": "Detected and live-tested", "color": "#31a354" } ],
+  "showTacticRowBackground": false,
+  "selectTechniquesAcrossTactics": true
+}
